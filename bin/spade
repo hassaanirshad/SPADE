@@ -117,7 +117,8 @@ else
 		else
 			echo "PID file does not exist"
 		fi
-
+	elif [ $1 = "testrun" ] ; then
+		java $remote_debugging_flags -Djava.library.path="$JAVALIBPATH" -cp "$CLASSPATH" $JVMARGS spade.utility.TestRun
 	else
 		print_help
 	fi
