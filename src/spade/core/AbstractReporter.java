@@ -25,7 +25,7 @@ package spade.core;
  * @author Dawood Tariq
  */
 public abstract class AbstractReporter {
-
+	public boolean isRunning(){ return false; }
     private Buffer internalBuffer;
     /**
      * The arguments that a specific reporter instance is initialized with.

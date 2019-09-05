@@ -251,6 +251,7 @@ public class Audit extends AbstractReporter {
 	private Boolean isLiveAudit = null;
 	// a flag to block on shutdown call if buffers are being emptied and events are still being read
 	private volatile boolean eventReaderThreadRunning = false;
+	@Override public boolean isRunning(){ return eventReaderThreadRunning; }
 	
 	private final long PID_MSG_WAIT_TIMEOUT = 1 * 1000;
 	
