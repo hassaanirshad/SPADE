@@ -1,10 +1,12 @@
 package spade.filter;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import spade.core.AbstractEdge;
 import spade.core.AbstractFilter;
@@ -23,6 +25,18 @@ public class ProcessFilter extends AbstractFilter{
 	private boolean strip; // TODO
 	
 	private String matchKey, matchValue;
+	private OpHandler opHandler;
+	
+	private static final Map<String, OpHandler> opHandlers = new HashMap<String, OpHandler>();
+	static{
+		opHandlers.put("=", new EqualHandler());
+		opHandlers.put("!=", new NotEqualHandler());
+		opHandlers.put("<", new LesserHandler());
+		opHandlers.put("<=", new LesserEqualHandler());
+		opHandlers.put(">", new GreaterHandler());
+		opHandlers.put(">=", new GreaterEqualsHandler());
+		opHandlers.put("~", new RegexHandler());
+	}
 	
 //	private Map<String, AbstractVertex> originalProcessHashToNewProcessVertex = null;
 	
@@ -65,6 +79,17 @@ public class ProcessFilter extends AbstractFilter{
 		}
 	}
 	
+	private static OpHandler mustParseOp(String arguments, Map<String, String> map, String key) throws Exception{
+		String opString = mustGetNonEmptyValue(arguments, map, key);
+		OpHandler opHandler = opHandlers.get(opString);
+		if(opHandler == null){
+			logger.log(Level.SEVERE, "NULL operation handler for '"+opString+"'");
+			throw new Exception();
+		}else{
+			return opHandler;
+		}
+	}
+	
 	@Override
 	public boolean initialize(String arguments){
 		try{
@@ -81,6 +106,11 @@ public class ProcessFilter extends AbstractFilter{
 			
 			this.matchKey = mustGetNonEmptyValue(arguments, map, "key");
 			this.matchValue = mustGetNonEmptyValue(arguments, map, "value");
+			this.opHandler = mustParseOp(arguments, map, "op");
+			
+			if(opHandler instanceof RegexHandler){
+				((RegexHandler)opHandler).init(matchValue);
+			}
 			
 			return true;
 		}catch(Exception e){
@@ -111,7 +141,7 @@ public class ProcessFilter extends AbstractFilter{
 			return false;
 		}else{
 			String value = vertex.getAnnotation(matchKey);
-			return matchValue.equals(value);
+			return opHandler.match(value, matchValue);
 		}
 	}
 	
@@ -244,4 +274,147 @@ public class ProcessFilter extends AbstractFilter{
 		}
 	}
 	
+	private static interface OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch);
+	}
+	
+	private static class EqualHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToMatch == "null"){
+				return valueToCheck == null;
+			}else{
+				if(valueToCheck == null && valueToMatch == null){
+					return true;
+				}else if(valueToCheck != null && valueToMatch == null){
+					return false;
+				}else if(valueToCheck == null && valueToMatch != null){
+					return false;
+				}else{
+					return valueToCheck.equals(valueToMatch);
+				}
+			}
+		}
+	}
+	
+	private static class NotEqualHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToMatch == "null"){
+				return valueToCheck != null;
+			}else{
+				if(valueToCheck == null && valueToMatch == null){
+					return false;
+				}else if(valueToCheck != null && valueToMatch == null){
+					return true;
+				}else if(valueToCheck == null && valueToMatch != null){
+					return true;
+				}else{
+					return !valueToCheck.equals(valueToMatch);
+				}
+			}
+		}
+	}
+	
+	private static class GreaterHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToCheck == null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck != null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck == null && valueToMatch != null){
+				return false;
+			}else{
+				try{
+					double doubleToCheck = Double.parseDouble(valueToCheck);
+					double doubleToMatch = Double.parseDouble(valueToMatch);
+					return doubleToCheck > doubleToMatch;
+				}catch(Exception e){
+					return false;
+				}
+			}
+		}
+	}
+	
+	private static class GreaterEqualsHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToCheck == null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck != null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck == null && valueToMatch != null){
+				return false;
+			}else{
+				try{
+					double doubleToCheck = Double.parseDouble(valueToCheck);
+					double doubleToMatch = Double.parseDouble(valueToMatch);
+					return doubleToCheck >= doubleToMatch;
+				}catch(Exception e){
+					return false;
+				}
+			}
+		}
+	}
+	
+	private static class LesserHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToCheck == null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck != null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck == null && valueToMatch != null){
+				return false;
+			}else{
+				try{
+					double doubleToCheck = Double.parseDouble(valueToCheck);
+					double doubleToMatch = Double.parseDouble(valueToMatch);
+					return doubleToCheck < doubleToMatch;
+				}catch(Exception e){
+					return false;
+				}
+			}
+		}
+	}
+	
+	private static class LesserEqualHandler implements OpHandler{
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(valueToCheck == null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck != null && valueToMatch == null){
+				return false;
+			}else if(valueToCheck == null && valueToMatch != null){
+				return false;
+			}else{
+				try{
+					double doubleToCheck = Double.parseDouble(valueToCheck);
+					double doubleToMatch = Double.parseDouble(valueToMatch);
+					return doubleToCheck <= doubleToMatch;
+				}catch(Exception e){
+					return false;
+				}
+			}
+		}
+	}
+	
+	private static class RegexHandler implements OpHandler{
+		private Pattern pattern = null;
+		public void init(String valueToMatch) throws Exception{
+			try{
+				pattern = Pattern.compile(valueToMatch);
+			}catch(Exception e){
+				logger.log(Level.SEVERE, "Failed to initialize pattern: " + valueToMatch, e);
+				throw e;
+			}
+		}
+		public boolean match(String valueToCheck, String valueToMatch){
+			if(pattern == null){
+				logger.log(Level.SEVERE, "Uninitialized pattern");
+				return false;
+			}else{
+				if(valueToCheck == null){
+					return false;
+				}else{
+					return pattern.matcher(valueToCheck).matches();
+				}
+			}
+		}
+	}
 }
