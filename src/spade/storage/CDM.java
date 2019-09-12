@@ -71,6 +71,7 @@ import spade.core.AbstractVertex;
 import spade.core.Settings;
 import spade.reporter.Audit;
 import spade.reporter.audit.OPMConstants;
+import spade.trace.profiler.CDMProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 import spade.utility.HostInfo;
@@ -1007,17 +1008,22 @@ public class CDM extends Kafka {
 	}
 	
 	private boolean publishVertex(AbstractVertex incomingVertex) {
+		boolean result = false;
 		try{
 			if(incomingVertex != null){
 				String type = incomingVertex.type();
 	
 				if(isProcessVertex(incomingVertex)){
-					return publishSubjectAndPrincipal(incomingVertex);
+					CDMProfile.instance.putVertexStart();
+					result = publishSubjectAndPrincipal(incomingVertex);
+					CDMProfile.instance.putVertexEnd();
 				}else if(OPMConstants.ARTIFACT.equals(type)){
 					if(OPMConstants.SOURCE_AUDIT_NETFILTER.equals(incomingVertex.getAnnotation(OPMConstants.SOURCE))){
 						// Ignore until CDM updated with refine edge. TODO
 					}else{
-						return publishArtifact(incomingVertex);
+						CDMProfile.instance.putVertexStart();
+						result = publishArtifact(incomingVertex);
+						CDMProfile.instance.putVertexEnd();
 					}
 				}else{
 					logger.log(Level.WARNING, "Unexpected vertex type {0}", new Object[]{type});
@@ -1027,7 +1033,7 @@ public class CDM extends Kafka {
 		}catch(Exception e){
 			logger.log(Level.WARNING, null, e);
 		}
-		return false;
+		return result;
 	}
 
 	/**
@@ -1209,9 +1215,10 @@ public class CDM extends Kafka {
 				logger.log(Level.WARNING, "Missing acting vertex or update edge in edges: " + edges);
 				return;
 			}else{
+				CDMProfile.instance.putEdgeStart();
 				publishEvent(EventType.EVENT_UPDATE, updateEdge, actingVertex, 
 						updateEdge.getParentVertex(), updateEdge.getChildVertex());
-				
+				CDMProfile.instance.putEdgeEnd();
 				// Remove the update edge and process the rest of the edges
 				List<AbstractEdge> edgesCopy = new ArrayList<AbstractEdge>(edges);
 				edgesCopy.remove(updateEdge);
@@ -1231,11 +1238,13 @@ public class CDM extends Kafka {
 				AbstractEdge edge = edgesCopy.get(a);
 				if(edge.getAnnotation(OPMConstants.EDGE_OPERATION).equals(OPMConstants.OPERATION_UNIT_DEPENDENCY)
 						&& edge.getAnnotation(OPMConstants.TYPE).equals(OPMConstants.WAS_TRIGGERED_BY)){
+					CDMProfile.instance.putEdgeStart();
 					AbstractVertex acting = edge.getParentVertex();
 					AbstractVertex dependent = edge.getChildVertex();
 					UnitDependency unitDependency = new UnitDependency(getUuid(acting), getUuid(dependent));
 					publishRecords(Arrays.asList(buildTcCDMDatum(unitDependency, InstrumentationSource.SOURCE_LINUX_BEEP_TRACE)));
 					edgesCopy.remove(a);
+					CDMProfile.instance.putEdgeEnd();
 				}
 			}
 			if(edgesCopy.isEmpty()){
@@ -1256,6 +1265,7 @@ public class CDM extends Kafka {
 	}
 
 	public boolean shutdown(){
+		
 		try {
 
 			// Flush buffer
@@ -1266,6 +1276,8 @@ public class CDM extends Kafka {
 
 			publishStreamMarkerObject(false);
 
+			CDMProfile.instance.shutdown();
+			
 			return super.shutdown();
 		} catch (Exception exception) {
 			logger.log(Level.SEVERE, null, exception);
@@ -1378,8 +1390,10 @@ public class CDM extends Kafka {
 
 			if(actingVertex != null){
 				
+				CDMProfile.instance.putEdgeStart();
 				publishEvent(eventType, edgeForEvent, actingVertex, actedUpon1, actedUpon2);
-
+				CDMProfile.instance.putEdgeEnd();
+				
 				// POST publishing things
 				if(eventType.equals(EventType.EVENT_EXIT)){
 					pidSubjectUUID.remove(actingVertex.getAnnotation(OPMConstants.PROCESS_PID));
@@ -1401,6 +1415,7 @@ public class CDM extends Kafka {
 			stats.put(key, 0L);
 		}
 		stats.put(key, stats.get(key) + 1);
+		CDMProfile.instance.newDatum(key);
 	}
 
 	/**
