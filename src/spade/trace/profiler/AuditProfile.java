@@ -173,8 +173,8 @@ public class AuditProfile{
 	public void shutdown(){
 		String vertexHistogramPath = ProfileConfig.getOutFilePath("audit-vertex-histogram.csv");
 		String edgeHistogramPath = ProfileConfig.getOutFilePath("audit-edge-histogram.csv");
-		vertexHistogram.toFile(vertexHistogramPath, false, false, String.valueOf(engagement));
-		edgeHistogram.toFile(edgeHistogramPath, false, false, String.valueOf(engagement));
+		vertexHistogram.toFile(vertexHistogramPath, false, true, String.valueOf(engagement));
+		edgeHistogram.toFile(edgeHistogramPath, false, true, String.valueOf(engagement));
 		
 		for(Map.Entry<String, Perioder> entry : syscallPerioder.entrySet()){
 			String key = entry.getKey();

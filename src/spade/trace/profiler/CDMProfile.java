@@ -36,7 +36,7 @@ public class CDMProfile{
 		String datumHistogramPath = ProfileConfig.getOutFilePath("cdm-datum-histogram.csv");
 		String putVertexPerioderPath = ProfileConfig.getOutFilePath("cdm-putvertex-perioder.csv");
 		String putEdgePerioderPath = ProfileConfig.getOutFilePath("cdm-putedge-perioder.csv");
-		datumCounts.toFile(datumHistogramPath, false, false, String.valueOf(engagement));
+		datumCounts.toFile(datumHistogramPath, false, true, String.valueOf(engagement));
 		putVertexPerioder.toFile(putVertexPerioderPath);
 		putEdgePerioder.toFile(putEdgePerioderPath);
 	}
