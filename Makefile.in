@@ -83,8 +83,8 @@ core:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/core/*.java
 	@echo "--- Built Core ---"
 trace:
-        $(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/trace/profiler/*.java
-        @echo "--- Built Trace ---"
+	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/trace/profiler/*.java
+	@echo "--- Built Trace ---"
 clients:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/client/*.java
 	@echo "--- Built Clients ---"
