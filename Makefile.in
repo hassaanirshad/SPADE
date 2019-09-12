@@ -69,7 +69,7 @@ help:
 
 build: | prepare-dirs 
 build: build-java $$(OS_BUILD) lib/spade.jar
-build-java: core clients utilities storages filters sketches transformers reporters
+build-java: core trace clients utilities storages filters sketches transformers reporters
 
 .SUFFIXES : .class .java
 
@@ -82,6 +82,9 @@ build/%.class : src/%.java
 core:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/core/*.java
 	@echo "--- Built Core ---"
+trace:
+	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/trace/profiler/*.java
+	@echo "--- Built Trace ---"
 clients:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/client/*.java
 	@echo "--- Built Clients ---"

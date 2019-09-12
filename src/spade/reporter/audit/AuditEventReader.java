@@ -43,6 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import spade.core.Settings;
+import spade.trace.profiler.AuditEventReaderProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 
@@ -52,6 +53,8 @@ import spade.utility.FileUtility;
  */
 public class AuditEventReader {
 
+	private final AuditEventReaderProfile profile = new AuditEventReaderProfile();
+	
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	//Reporting variables
@@ -298,7 +301,9 @@ public class AuditEventReader {
 			return getEventData();		
 		}else{ // not all streams processed
 			while(currentlyBufferedRecords < maxRecordBufferSize){ //read audit records until max amount read
+				profile.recordReadStart();
 				String line = currentInputStreamReaderEntry.getValue().readLine();
+				profile.recordReadEnd();
 				if(line == null){ //if input stream read completely
 					logger.log(Level.INFO, "Reading succeeded of '" + currentInputStreamReaderEntry.getKey() + "'");
 					initializeCurrentStreamReader(); //initialize the next stream
@@ -376,6 +381,7 @@ public class AuditEventReader {
 				logger.log(Level.SEVERE, "Failed to close input stream for key '"+key+"'", e);
 			}
 		}
+		profile.shutdown();
 	}
 
 	/**
@@ -387,8 +393,12 @@ public class AuditEventReader {
 	private Map<String,String> getEventData() throws Exception{
 		Long eventId = eventIds.pollFirst();
 		if(eventId == null){ //empty
+			profile.eventConstructionStart();
+			profile.eventConstructionEnd();
 			return null;
 		}else{
+			profile.eventConstructionStart();
+			
 			lastEventId = eventId;
 			Set<String> eventRecords = eventIdToEventRecords.remove(eventId);
 			currentlyBufferedRecords -= eventRecords.size();
@@ -407,7 +417,8 @@ public class AuditEventReader {
 				}
 
 			}
-
+			profile.eventConstructionEnd();
+			
 			return eventData;
 		}	
 	}
@@ -420,6 +431,8 @@ public class AuditEventReader {
 	 */
 	private Map<String, String> parseEventLine(String line) {
 
+		profile.recordParseStart();
+		
 		Map<String, String> auditRecordKeyValues = new HashMap<String, String>();
 
 		Matcher event_start_matcher = pattern_message_start.matcher(line);
@@ -514,7 +527,7 @@ public class AuditEventReader {
 		} else {
 
 		}
-
+		profile.recordParseEnd();
 		return auditRecordKeyValues;
 	}
 
