@@ -68,6 +68,7 @@ import spade.reporter.audit.SYSCALL;
 import spade.reporter.audit.UnixSocketIdentifier;
 import spade.reporter.audit.UnknownIdentifier;
 import spade.reporter.audit.UnnamedPipeIdentifier;
+import spade.trace.profiler.AuditProfile;
 import spade.utility.BerkeleyDB;
 import spade.utility.CommonFunctions;
 import spade.utility.Execute;
@@ -1543,6 +1544,8 @@ public class Audit extends AbstractReporter {
 			// Wait while the event reader thread is still running i.e. buffer being emptied
 		}
 		
+		AuditProfile.instance.shutdown();
+		
 		return true;
 	}
 
@@ -1750,6 +1753,7 @@ public class Audit extends AbstractReporter {
 	 * @param eventId id of the event against which the key value maps are saved
 	 */
 	private void handleSyscallEvent(Map<String, String> eventData) {
+		SYSCALL syscall = null;
 		String eventId = eventData.get(AuditEventReader.EVENT_ID);
 		try {
 
@@ -1767,7 +1771,9 @@ public class Audit extends AbstractReporter {
 				return;
 			}
 
-			SYSCALL syscall = SYSCALL.getSyscall(syscallNum, arch);
+			syscall = SYSCALL.getSyscall(syscallNum, arch);
+			
+			AuditProfile.instance.syscallStart(String.valueOf(syscall));
 
 			if("1".equals(AUDITCTL_SYSCALL_SUCCESS_FLAG) 
 					&& AuditEventReader.SUCCESS_NO.equals(eventData.get(AuditEventReader.SUCCESS))){
@@ -1908,8 +1914,11 @@ public class Audit extends AbstractReporter {
 			default: //SYSCALL.UNSUPPORTED
 				//log(Level.INFO, "Unsupported syscall '"+syscallNum+"'", null, eventData.get("time"), eventId, syscall);
 			}
+			
+			AuditProfile.instance.syscallEnd(String.valueOf(syscall));
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "Error processing finish syscall event with eventid '"+eventId+"'", e);
+			AuditProfile.instance.syscallEndException(String.valueOf(syscall), e);
 		}
 	}
 

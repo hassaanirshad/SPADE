@@ -39,6 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import spade.core.Settings;
+import spade.trace.profiler.AuditEventReaderProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 
@@ -51,6 +52,8 @@ import spade.utility.FileUtility;
  */
 public class AuditEventReader {
 
+	private final AuditEventReaderProfile profiler = new AuditEventReaderProfile();
+	
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	public static final String ARG0 = "a0",
@@ -367,7 +370,13 @@ public class AuditEventReader {
 			}else{
 				String line = null;
 				
-				while((line = stream.readLine()) != null){
+				while(true){
+					profiler.recordReadStart();
+					line = stream.readLine();
+					profiler.recordReadEnd();
+					if(line == null){
+						break;
+					}
 					writeToOutputLog(line);
 					if(reportingEnabled){
 						recordCount++;
@@ -455,14 +464,20 @@ public class AuditEventReader {
 	 * @return map of key values
 	 */
 	private Map<String, String> getEventMap(Set<String> records){
+		profiler.eventConstructionStart();
 		Map<String, String> eventMap = new HashMap<String, String>();
 		for(String record : records){
-			eventMap.putAll(parseEventLine(record));
+			profiler.recordParseStart();
+			Map<String, String> rmap = parseEventLine(record);
+			profiler.recordParseEnd();
+			eventMap.putAll(rmap);
 		}
+		profiler.eventConstructionEnd();
 		return eventMap;
 	}
 
 	public void close(){
+		profiler.shutdown();
 		if(reportingEnabled){
 			printStats();
 		}
