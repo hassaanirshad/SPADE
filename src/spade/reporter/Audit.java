@@ -70,6 +70,7 @@ import spade.reporter.audit.artifact.UnnamedUnixSocketPairIdentifier;
 import spade.reporter.audit.process.ProcessManager;
 import spade.reporter.audit.process.ProcessWithAgentManager;
 import spade.reporter.audit.process.ProcessWithoutAgentManager;
+import spade.trace.profiler.AuditProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.Execute;
 import spade.utility.FileUtility;
@@ -1635,6 +1636,8 @@ public class Audit extends AbstractReporter {
 			try{ Thread.sleep(PID_MSG_WAIT_TIMEOUT); }catch(Exception e){}
 		}
 		
+		AuditProfile.instance.shutdown();
+		
 		// force print stats before exiting
 		printStats(true);
 		
@@ -1733,6 +1736,7 @@ public class Audit extends AbstractReporter {
 				if(syscall == null || syscall == SYSCALL.UNSUPPORTED){
 					log(Level.WARNING, "Invalid syscall: " + syscallNumber, null, time, eventId, null);
 				}else{
+					AuditProfile.instance.kernelSyscallStart(String.valueOf(syscall));
 					switch (syscall) {
 						case BIND:
 							handleBindKernelModule(eventData, time, eventId, syscall, pid,
@@ -1763,10 +1767,12 @@ public class Audit extends AbstractReporter {
 							log(Level.WARNING, "Unexpected syscall: " + syscallNumber, null, time, eventId, syscall);
 							break;
 					}
+					AuditProfile.instance.kernelSyscallEnd(String.valueOf(syscall));
 				}
 			}
 		}catch(Exception e){
 			log(Level.WARNING, "Failed to parse kernel module event", null, time, eventId, syscall);
+			AuditProfile.instance.kernelSyscallEndException(String.valueOf(syscall), e);
 		}
 	}
 	
@@ -1830,6 +1836,7 @@ public class Audit extends AbstractReporter {
 	 * @param eventId id of the event against which the key value maps are saved
 	 */
 	private void handleSyscallEvent(Map<String, String> eventData) {
+		SYSCALL syscall = null;
 		String time = eventData.get(AuditEventReader.TIME);
 		String eventId = eventData.get(AuditEventReader.EVENT_ID);
 		try {
@@ -1842,7 +1849,8 @@ public class Audit extends AbstractReporter {
 				return;
 			}
 			
-			SYSCALL syscall = getSyscall(syscallNum);
+			syscall = getSyscall(syscallNum);
+			AuditProfile.instance.syscallStart(String.valueOf(syscall));
 			
 			if(syscall == null){
 				log(Level.WARNING, "Invalid syscall: " + syscallNum, null, time, eventId, null);
@@ -2028,8 +2036,10 @@ public class Audit extends AbstractReporter {
 			default: //SYSCALL.UNSUPPORTED
 				//log(Level.INFO, "Unsupported syscall '"+syscallNum+"'", null, eventData.get("time"), eventId, syscall);
 			}
+			AuditProfile.instance.syscallEnd(String.valueOf(syscall));
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "Error processing finish syscall event with eventid '"+eventId+"'", e);
+			AuditProfile.instance.syscallEndException(String.valueOf(syscall), e);
 		}
 	}
 
