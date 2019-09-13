@@ -24,28 +24,35 @@ public class AuditProfile{
 	
 	private AuditProfile(){}
 	
-	public void unitMemoryWrite(String pid, String address){
-		String memory = pid+","+address;
+	public void unitMemoryWrite(String processId, String memoryId){
+		String memory = memoryId;
 		ReadWriteCount c = unitMemoryStats.get(memory);
 		if(c == null){
 			c = new ReadWriteCount();
 			unitMemoryStats.put(memory, c);
 		}
 		c.w++;
+		c.lastWriter = processId;
 	}
 	
-	public void unitMemoryRead(String pid, String address){
-		String memory = pid+","+address;
+	public void unitMemoryRead(String processId, String memoryId){
+		String memory = memoryId;
 		ReadWriteCount c = unitMemoryStats.get(memory);
 		if(c == null){
 			c = new ReadWriteCount();
 			unitMemoryStats.put(memory, c);
 		}
 		c.r++;
-		if(c.w > 0){
-			c.d++;
-			newEdge("unit dependency");
+		if(c.lastWriter != null){
+			if(!c.lastWriter.equals(processId)){
+				c.d++;
+				newEdge("unit dependency");
+			}
 		}
+//		if(c.w > 0){
+//			c.d++;
+//			newEdge("unit dependency");
+//		}
 	}
 	
 	public void syscallStart(String syscallName){
@@ -222,6 +229,8 @@ public class AuditProfile{
 	}
 	
 	private static class ReadWriteCount{
+		private String lastWriter;
+		
 		private long r = 0, w = 0, d = 0; // read, write, dep
 	}
 }

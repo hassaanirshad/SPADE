@@ -1425,12 +1425,12 @@ public class Audit extends AbstractReporter {
 				pidToMemAddress.remove(pid);
 				if(arg0.intValue() == -201){
 					memArtifact = putArtifact(eventData, new MemoryIdentifier(pid, address.toString(16), ""), false, BEEP);
-					AuditProfile.instance.unitMemoryRead(pid, address.toString(16));
+					AuditProfile.instance.unitMemoryRead(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
 					edge = new Used(process, memArtifact);
 					operation = getOperation(SYSCALL.READ);
 				}else if(arg0.intValue() == -301){
 					memArtifact = putArtifact(eventData, new MemoryIdentifier(pid, address.toString(16), ""), true, BEEP);
-					AuditProfile.instance.unitMemoryWrite(pid, address.toString(16));
+					AuditProfile.instance.unitMemoryWrite(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
 					edge = new WasGeneratedBy(memArtifact, process);
 					operation = getOperation(SYSCALL.WRITE);
 				}
