@@ -19,8 +19,6 @@
  */
 package spade.core;
 
-import spade.trace.profiler.AuditProfile;
-
 /**
  * This is the base class for reporters.
  *
@@ -59,7 +57,7 @@ public abstract class AbstractReporter {
      * @return True if the buffer accepted the vertex.
      */
     public final boolean putVertex(AbstractVertex vertex) {
-    	AuditProfile.instance.newVertexCommon(vertex);
+    	if(vertex != null){Kernel.profileConfig.auditNewVertex(vertex.getAnnotations());}
         return internalBuffer.putVertex(vertex);
     }
 
@@ -70,7 +68,7 @@ public abstract class AbstractReporter {
      * @return True if the buffer accepted the edge.
      */
     public final boolean putEdge(AbstractEdge edge) {
-    	AuditProfile.instance.newEdgeCommon(edge);
+    	if(edge != null){Kernel.profileConfig.auditNewVertex(edge.getAnnotations());}
         return internalBuffer.putEdge(edge);
     }
 

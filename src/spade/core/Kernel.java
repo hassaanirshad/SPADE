@@ -62,6 +62,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import spade.filter.FinalCommitFilter;
 import spade.utility.LogManager;
+import trace.profiler.client.ProfileConfig;
 
 /**
  * The SPADE kernel containing the control client and
@@ -157,6 +158,16 @@ public class Kernel
      */
     public static Set<AbstractSketch> sketches;
 
+    public static ProfileConfig profileConfig = null;
+
+    static{
+    	try{
+    		profileConfig = ProfileConfig.createInstance("cfg/spade.trace.profiler.ProfileConfig.config");
+    	}catch(Exception e){
+    		Logger.getLogger("ProfileConfigSetupLogger").log(Level.SEVERE, "Error in init of profile config", e);
+    	}
+    }
+    
     public static boolean isShutdown()
     {
         return shutdown;
@@ -1533,6 +1544,8 @@ public class Kernel
 
         // Allow LogManager to complete its response to the shutdown
         LogManager.shutdownReset();
+        
+        profileConfig.shutdown();
     }
 
     public static String getPidFileName(){

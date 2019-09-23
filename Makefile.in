@@ -69,7 +69,7 @@ help:
 
 build: | prepare-dirs
 build: build-java $$(OS_BUILD) lib/spade.jar
-build-java: download-neo4j core trace clients utilities storages filters query analyzers sketches transformers reporters
+build-java: download-neo4j core clients utilities storages filters query analyzers sketches transformers reporters
 
 NEO4J_DIR=lib/neo4j-community-3.4.4
 download-neo4j:
@@ -91,9 +91,6 @@ build/%.class : src/%.java
  
 core:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/core/*.java
-	@echo "--- Built Core ---"
-trace:
-	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/trace/profiler/*.java
 	@echo "--- Built Core ---"
 clients:
 	$(JAVAC) $(JAVAC_OPTIONS) -cp '$(JAVAC_CP)' -sourcepath src -d build src/spade/client/*.java
