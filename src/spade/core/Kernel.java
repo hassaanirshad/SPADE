@@ -144,13 +144,6 @@ public class Kernel
     
     public static ProfileConfig profileConfig = null;
     
-    static{
-    	try{
-    		profileConfig = ProfileConfig.createInstance("cfg/spade.trace.profiler.ProfileConfig.config");
-    	}catch(Exception e){
-    		Logger.getLogger("ProfileConfigSetupLogger").log(Level.SEVERE, "Error in init of profile config", e);
-    	}
-    }
 
     public static boolean isShutdown()
     {
@@ -221,6 +214,12 @@ public class Kernel
         if (args.length == 1 && args[0].equals("android")) {
             ANDROID_PLATFORM = true;
         }
+
+    	try{
+    		profileConfig = ProfileConfig.createInstance("cfg/spade.trace.profiler.ProfileConfig.config");
+    	}catch(Exception e){
+    		Logger.getLogger("ProfileConfigSetupLogger").log(Level.SEVERE, "Error in init of profile config", e);
+    	}
 
         // Set up context for secure connections
         if (!ANDROID_PLATFORM) {
