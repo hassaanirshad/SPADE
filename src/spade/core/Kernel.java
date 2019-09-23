@@ -51,8 +51,8 @@ import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -65,6 +65,7 @@ import javax.net.ssl.TrustManagerFactory;
 import spade.client.QueryParameters;
 import spade.filter.FinalCommitFilter;
 import spade.utility.LogManager;
+import trace.profiler.client.ProfileConfig;
 
 /**
  * This mediates between vertex and edges coming from Reporters, applying Filters to them, before
@@ -203,6 +204,16 @@ public class Kernel {
     public static SSLServerSocketFactory sslServerSocketFactory;
     
     private final static int CONTROL_CLIENT_READ_TIMEOUT = 1000; //time to timeout after when reading from the control client socket
+    
+    public static ProfileConfig profileConfig = null;
+    
+    static{
+    	try{
+    		profileConfig = ProfileConfig.createInstance("cfg/spade.trace.profiler.ProfileConfig.config");
+    	}catch(Exception e){
+    		Logger.getLogger("ProfileConfigSetupLogger").log(Level.SEVERE, "Error in init of profile config", e);
+    	}
+    }
     
     private static void setupKeyStores() throws Exception {
 
@@ -1330,6 +1341,8 @@ public class Kernel {
         
         // Allow LogManager to complete its response to the shutdown
         LogManager.shutdownReset();
+        
+        profileConfig.shutdown();
     }
     
     public static String getPidFileName(){

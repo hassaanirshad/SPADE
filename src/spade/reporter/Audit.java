@@ -46,6 +46,7 @@ import org.apache.commons.io.FileUtils;
 
 import spade.core.AbstractEdge;
 import spade.core.AbstractReporter;
+import spade.core.Kernel;
 import spade.core.Settings;
 import spade.edge.opm.Used;
 import spade.edge.opm.WasDerivedFrom;
@@ -63,7 +64,6 @@ import spade.reporter.audit.SYSCALL;
 import spade.reporter.audit.UnixSocketIdentifier;
 import spade.reporter.audit.UnknownIdentifier;
 import spade.reporter.audit.UnnamedPipeIdentifier;
-import spade.trace.profiler.AuditProfile;
 import spade.utility.BerkeleyDB;
 import spade.utility.CommonFunctions;
 import spade.utility.Execute;
@@ -946,7 +946,7 @@ public class Audit extends AbstractReporter {
 		}catch(Exception e){
 			logger.log(Level.SEVERE, "Error trying to kill process spadeSocketBridge", e);
 		}
-		AuditProfile.instance.shutdown();
+		Kernel.profileConfig.auditShutdown();
 		return true;
 	}
 
@@ -1018,7 +1018,7 @@ public class Audit extends AbstractReporter {
 
 			syscall = SYSCALL.getSyscall(syscallNum, arch);
 
-			AuditProfile.instance.syscallStart(String.valueOf(syscall));
+			Kernel.profileConfig.auditSyscallStart(String.valueOf(syscall));
 			
 			if("1".equals(AUDITCTL_SYSCALL_SUCCESS_FLAG) && "no".equals(eventData.get("success"))){
 				//if only log successful events but the current event had success no then only monitor the following calls.
@@ -1141,10 +1141,10 @@ public class Audit extends AbstractReporter {
 			default: //SYSCALL.UNSUPPORTED
 			log(Level.INFO, "Unsupported syscall '"+syscallNum+"'", null, eventId, syscall);
 			}
-			AuditProfile.instance.syscallEnd(String.valueOf(syscall));
+			Kernel.profileConfig.auditSyscallEnd(String.valueOf(syscall));
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "Error processing finish syscall event with eventid '"+eventId+"'", e);
-			AuditProfile.instance.syscallEndException(String.valueOf(syscall), e);
+			Kernel.profileConfig.auditSyscallEndException(String.valueOf(syscall));
 		}
 	}
 
@@ -1425,12 +1425,12 @@ public class Audit extends AbstractReporter {
 				pidToMemAddress.remove(pid);
 				if(arg0.intValue() == -201){
 					memArtifact = putArtifact(eventData, new MemoryIdentifier(pid, address.toString(16), ""), false, BEEP);
-					AuditProfile.instance.unitMemoryRead(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
+					Kernel.profileConfig.auditUnitMemoryRead(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
 					edge = new Used(process, memArtifact);
 					operation = getOperation(SYSCALL.READ);
 				}else if(arg0.intValue() == -301){
 					memArtifact = putArtifact(eventData, new MemoryIdentifier(pid, address.toString(16), ""), true, BEEP);
-					AuditProfile.instance.unitMemoryWrite(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
+					Kernel.profileConfig.auditUnitMemoryWrite(process.getAnnotations().toString(), memArtifact.getAnnotations().toString());
 					edge = new WasGeneratedBy(memArtifact, process);
 					operation = getOperation(SYSCALL.WRITE);
 				}

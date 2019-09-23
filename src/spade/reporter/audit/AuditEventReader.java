@@ -42,8 +42,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import spade.core.Kernel;
 import spade.core.Settings;
-import spade.trace.profiler.AuditEventReaderProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 
@@ -53,8 +53,6 @@ import spade.utility.FileUtility;
  */
 public class AuditEventReader {
 
-	private final AuditEventReaderProfile profile = new AuditEventReaderProfile();
-	
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	//Reporting variables
@@ -301,9 +299,9 @@ public class AuditEventReader {
 			return getEventData();		
 		}else{ // not all streams processed
 			while(currentlyBufferedRecords < maxRecordBufferSize){ //read audit records until max amount read
-				profile.recordReadStart();
+				Kernel.profileConfig.aueRecordReadStart();
 				String line = currentInputStreamReaderEntry.getValue().readLine();
-				profile.recordReadEnd();
+				Kernel.profileConfig.aueRecordReadEnd();
 				if(line == null){ //if input stream read completely
 					logger.log(Level.INFO, "Reading succeeded of '" + currentInputStreamReaderEntry.getKey() + "'");
 					initializeCurrentStreamReader(); //initialize the next stream
@@ -381,7 +379,7 @@ public class AuditEventReader {
 				logger.log(Level.SEVERE, "Failed to close input stream for key '"+key+"'", e);
 			}
 		}
-		profile.shutdown();
+		Kernel.profileConfig.aueShutdown();
 	}
 
 	/**
@@ -393,11 +391,11 @@ public class AuditEventReader {
 	private Map<String,String> getEventData() throws Exception{
 		Long eventId = eventIds.pollFirst();
 		if(eventId == null){ //empty
-			profile.eventConstructionStart();
-			profile.eventConstructionEnd();
+			Kernel.profileConfig.aueEventStart();
+			Kernel.profileConfig.aueEventEnd();
 			return null;
 		}else{
-			profile.eventConstructionStart();
+			Kernel.profileConfig.aueEventStart();
 			
 			lastEventId = eventId;
 			Set<String> eventRecords = eventIdToEventRecords.remove(eventId);
@@ -417,7 +415,7 @@ public class AuditEventReader {
 				}
 
 			}
-			profile.eventConstructionEnd();
+			Kernel.profileConfig.aueEventEnd();
 			
 			return eventData;
 		}	
@@ -431,7 +429,7 @@ public class AuditEventReader {
 	 */
 	private Map<String, String> parseEventLine(String line) {
 
-		profile.recordParseStart();
+		Kernel.profileConfig.aueRecordParseStart();
 		
 		Map<String, String> auditRecordKeyValues = new HashMap<String, String>();
 
@@ -527,7 +525,7 @@ public class AuditEventReader {
 		} else {
 
 		}
-		profile.recordParseEnd();
+		Kernel.profileConfig.aueRecordParseEnd();
 		return auditRecordKeyValues;
 	}
 

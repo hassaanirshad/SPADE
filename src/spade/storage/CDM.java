@@ -55,9 +55,9 @@ import com.bbn.tc.schema.serialization.AvroConfig;
 
 import spade.core.AbstractEdge;
 import spade.core.AbstractVertex;
+import spade.core.Kernel;
 import spade.core.Vertex;
 import spade.reporter.audit.ArtifactIdentifier;
-import spade.trace.profiler.CDMProfile;
 import spade.utility.CommonFunctions;
 
 /**
@@ -146,13 +146,13 @@ public class CDM extends Kafka {
 
             String vertexType = vertex.type();
             if (vertexType.equals("Process")) {
-            	CDMProfile.instance.putVertexStart();
+            	Kernel.profileConfig.cdmPutVertexStart();
                 tccdmDatums = mapProcess(vertex);
-                CDMProfile.instance.putVertexEnd();
+                Kernel.profileConfig.cdmPutVertexEnd();
             } else if (vertexType.equals("Artifact")) {
-            	CDMProfile.instance.putVertexStart();
+            	Kernel.profileConfig.cdmPutVertexStart();
                 tccdmDatums = mapArtifact(vertex);
-                CDMProfile.instance.putVertexEnd();
+                Kernel.profileConfig.cdmPutVertexEnd();
             } else {
                 logger.log(Level.WARNING, "Unexpected vertex type: {0}", vertexType);
                 return false;
@@ -236,7 +236,7 @@ public class CDM extends Kafka {
     
     @Override
     public boolean putEdge(AbstractEdge edge) {
-    	CDMProfile.instance.putEdgeStart();
+    	Kernel.profileConfig.cdmPutEdgeStart();
         try {
             List<GenericContainer> tccdmDatums = new LinkedList<GenericContainer>();
             EdgeType affectsEdgeType = null;
@@ -284,8 +284,8 @@ public class CDM extends Kafka {
             			for(UUID pendingLoadedFileUUID : pendingLoadedFilesUUIDs){
             				SimpleEdge loadEdge = createSimpleEdge(pendingLoadedFileUUID, getUuid(edge),
                     				EdgeType.EDGE_FILE_AFFECTS_EVENT, time);
-            				CDMProfile.instance.newDatum("EVENT_LOAD");
-            				CDMProfile.instance.newDatum("EDGE_FILE_AFFECTS_EVENT");
+            				Kernel.profileConfig.cdmNewDatum("EVENT_LOAD");
+            				Kernel.profileConfig.cdmNewDatum("EDGE_FILE_AFFECTS_EVENT");
     	                    tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(loadEdge).build());
             			}
             			eventIdToPendingLoadedFilesUUIDs.remove(eventId); //remove since all have been added
@@ -360,8 +360,8 @@ public class CDM extends Kafka {
                 	if(getExecEventUUID(actingProcessPidString) != null){
                 		SimpleEdge loadEdge = createSimpleEdge(getUuid(edge.getDestinationVertex()), getExecEventUUID(actingProcessPidString),
                 				EdgeType.EDGE_FILE_AFFECTS_EVENT, time);
-                		CDMProfile.instance.newDatum("EVENT_LOAD");
-                		CDMProfile.instance.newDatum("EDGE_FILE_AFFECTS_EVENT");
+                		Kernel.profileConfig.cdmNewDatum("EVENT_LOAD");
+                		Kernel.profileConfig.cdmNewDatum("EDGE_FILE_AFFECTS_EVENT");
 	                    tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(loadEdge).build());
 	                    publishRecords(tccdmDatums);
 	                    return true; //no need to create an event for this so returning from here after adding the edge
@@ -411,7 +411,7 @@ public class CDM extends Kafka {
                 } else if (opmOperation.equals("update")) {   
                 	SimpleEdge updateEdge = createSimpleEdge(getUuid(edge.getSourceVertex()), getUuid(edge.getDestinationVertex()), 
                 			EdgeType.EDGE_OBJECT_PREV_VERSION, time);
-                	CDMProfile.instance.newDatum("EDGE_OBJECT_PREV_VERSION");
+                	Kernel.profileConfig.cdmNewDatum("EDGE_OBJECT_PREV_VERSION");
                     tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(updateEdge).build());
                     publishRecords(tccdmDatums);
                     return true; //no need to create an event for this so returning from here after adding the edge
@@ -458,7 +458,7 @@ public class CDM extends Kafka {
             eventBuilder.setProperties(eventProperties);
             eventBuilder.setThreadId(actingProcessPid);
             Event event = eventBuilder.build();
-            CDMProfile.instance.newDatum(String.valueOf(eventType));
+            Kernel.profileConfig.cdmNewDatum(String.valueOf(eventType));
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(event).build());
 
             /* Generate the _*_AFFECTS_* edge record */
@@ -473,14 +473,14 @@ public class CDM extends Kafka {
             			affectsEdgeType, time);
             	uuidOfProcessVertex = getUuid(edge.getDestinationVertex()); //getting the destination because that is the process
             }
-            CDMProfile.instance.newDatum(String.valueOf(affectsEdgeType));
+            Kernel.profileConfig.cdmNewDatum(String.valueOf(affectsEdgeType));
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(affectsEdge).build());
             
             if (opmEdgeType.equals("WasDerivedFrom")) {
                 /* Generate another _*_AFFECTS_* edge in the reverse direction */
             	SimpleEdge affectsEventEdge = createSimpleEdge(getUuid(edge.getDestinationVertex()), getUuid(edge), 
             			getArtifactAffectsEventEdgeType(edge.getDestinationVertex()), time);
-            	CDMProfile.instance.newDatum(String.valueOf(getArtifactAffectsEventEdgeType(edge.getDestinationVertex())));
+            	Kernel.profileConfig.cdmNewDatum(String.valueOf(getArtifactAffectsEventEdgeType(edge.getDestinationVertex())));
                 tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(affectsEventEdge).build());
                 
                 uuidOfProcessVertex = getProcessSubjectUUID(String.valueOf(actingProcessPid));
@@ -490,7 +490,7 @@ public class CDM extends Kafka {
 	            /* Generate the EVENT_ISGENERATEDBY_SUBJECT edge record */
             	SimpleEdge eventToProcessEdge = createSimpleEdge(getUuid(edge), uuidOfProcessVertex, 
             			EdgeType.EDGE_EVENT_ISGENERATEDBY_SUBJECT, time);
-            	CDMProfile.instance.newDatum("EDGE_EVENT_ISGENERATEDBY_SUBJECT");
+            	Kernel.profileConfig.cdmNewDatum("EDGE_EVENT_ISGENERATEDBY_SUBJECT");
 	            tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(eventToProcessEdge).build());
             }else{
             	logger.log(Level.WARNING, "Failed to find process uuid in process cache map for pid {0}. event id = {1}", new Object[]{edge.getAnnotation("pid"), eventId});
@@ -503,7 +503,7 @@ public class CDM extends Kafka {
             logger.log(Level.SEVERE, null, exception);
             return false;
         }finally{
-        	CDMProfile.instance.putEdgeEnd();
+        	Kernel.profileConfig.cdmPutEdgeEnd();
         }
     }
 
@@ -511,8 +511,6 @@ public class CDM extends Kafka {
     public boolean shutdown() {
         try {
             
-        	CDMProfile.instance.shutdown();
-        	
             for(Map.Entry<Long, Set<UUID>> entry : eventIdToPendingLoadedFilesUUIDs.entrySet()){
             	Long eventId = entry.getKey();
             	if(entry.getValue() != null && entry.getValue().size() > 0){
@@ -521,6 +519,8 @@ public class CDM extends Kafka {
             }            
             
             publishStreamMarkerObject(false);
+            
+            Kernel.profileConfig.cdmShutdown();
             
             return super.shutdown();
         } catch (Exception exception) {
@@ -597,9 +597,9 @@ public class CDM extends Kafka {
         subjectBuilder.setProperties(properties);
         Subject subject = subjectBuilder.build();
         if(isUnit){
-        	CDMProfile.instance.newDatum("SUBJECT_UNIT");
+        	Kernel.profileConfig.cdmNewDatum("SUBJECT_UNIT");
         }else{
-        	CDMProfile.instance.newDatum("SUBJECT_PROCESS");
+        	Kernel.profileConfig.cdmNewDatum("SUBJECT_PROCESS");
         }
         tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(subject).build()); //added subject
         
@@ -611,7 +611,7 @@ public class CDM extends Kafka {
         if(!principalUUIDs.contains(principalVertexUUID)){
         	Principal principal = createPrincipal(principalVertex);
         	if(principal != null){
-        		CDMProfile.instance.newDatum("PRINCIPAL_LOCAL");
+        		Kernel.profileConfig.cdmNewDatum("PRINCIPAL_LOCAL");
         		tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(principal).build());
         		principalUUIDs.add(principalVertexUUID);
         	}
@@ -622,7 +622,7 @@ public class CDM extends Kafka {
 	        SimpleEdge simpleEdge = createSimpleEdge(getUuid(vertex), principalVertexUUID, 
 	        		EdgeType.EDGE_SUBJECT_HASLOCALPRINCIPAL, 
 	        		convertTimeToMicroseconds(null, vertex.getAnnotation("start time"), 0L));
-	        CDMProfile.instance.newDatum("EDGE_SUBJECT_HASLOCALPRINCIPAL");
+	        Kernel.profileConfig.cdmNewDatum("EDGE_SUBJECT_HASLOCALPRINCIPAL");
 	        tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(simpleEdge).build());
         }
         
@@ -705,7 +705,7 @@ public class CDM extends Kafka {
             }
             fileBuilder.setIsPipe(false);
             FileObject fileObject = fileBuilder.build();
-            CDMProfile.instance.newDatum("FileObject");
+            Kernel.profileConfig.cdmNewDatum("FileObject");
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(fileObject).build());
             return tccdmDatums;
         } else if (entityType.equals(ArtifactIdentifier.SUBTYPE_SOCKET)) { //not handling unix sockets yet. TODO
@@ -727,7 +727,7 @@ public class CDM extends Kafka {
                 }
                 unixSocketBuilder.setIsPipe(false);
                 FileObject uniSocketObject = unixSocketBuilder.build();
-                CDMProfile.instance.newDatum("UnixSocketObject");
+                Kernel.profileConfig.cdmNewDatum("UnixSocketObject");
                 tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(uniSocketObject).build());
             	                
             	//return always from here
@@ -764,7 +764,7 @@ public class CDM extends Kafka {
             netBuilder.setDestPort(CommonFunctions.parseInt(destPort, 0));
             
             NetFlowObject netFlowObject = netBuilder.build();
-            CDMProfile.instance.newDatum("NetFlowObject");
+            Kernel.profileConfig.cdmNewDatum("NetFlowObject");
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(netFlowObject).build());
             return tccdmDatums;
         } else if (entityType.equals(ArtifactIdentifier.SUBTYPE_MEMORY)) { //no epoch for memory
@@ -786,7 +786,7 @@ public class CDM extends Kafka {
             memoryBuilder.setBaseObject(baseObject);
             // memoryBuilder.setPageNumber(0);                          // TODO remove when marked optional
             memoryBuilder.setMemoryAddress(Long.parseLong(vertex.getAnnotation("memory address"), 16));
-            CDMProfile.instance.newDatum("MemoryObject");
+            Kernel.profileConfig.cdmNewDatum("MemoryObject");
             MemoryObject memoryObject = memoryBuilder.build();
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(memoryObject).build());
             return tccdmDatums;
@@ -802,10 +802,10 @@ public class CDM extends Kafka {
             	properties.put("epoch", vertex.getAnnotation("epoch"));
             }
             if(vertex.getAnnotation("pid") != null){
-            	CDMProfile.instance.newDatum("UnnamedNamedPipeObject");
+            	Kernel.profileConfig.cdmNewDatum("UnnamedNamedPipeObject");
             	properties.put("pid", vertex.getAnnotation("pid"));
             }else{
-            	CDMProfile.instance.newDatum("NamedPipeObject");
+            	Kernel.profileConfig.cdmNewDatum("NamedPipeObject");
             }
             if(properties.size() > 0){
             	baseObject.setProperties(properties);
@@ -845,7 +845,7 @@ public class CDM extends Kafka {
             unknownBuilder.setUuid(getUuid(vertex));
             unknownBuilder.setType(SrcSinkType.SOURCE_UNKNOWN);
             SrcSinkObject unknownObject = unknownBuilder.build();
-            CDMProfile.instance.newDatum("UnknownObject");
+            Kernel.profileConfig.cdmNewDatum("UnknownObject");
             tccdmDatums.add(TCCDMDatum.newBuilder().setDatum(unknownObject).build());
             return tccdmDatums;	
         } else {
