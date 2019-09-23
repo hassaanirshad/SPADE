@@ -1214,7 +1214,7 @@ public class CDM extends Kafka {
 				if(isProcessVertex(incomingVertex)){
 					Kernel.profileConfig.cdmPutVertexStart();
 					result = publishSubjectAndPrincipal(incomingVertex);
-					Kernel.profileConfig.cdmPutVertexStart();
+					Kernel.profileConfig.cdmPutVertexEnd();
 				}else if(OPMConstants.ARTIFACT.equals(type)){
 					if(OPMConstants.SOURCE_AUDIT_NETFILTER.equals(incomingVertex.getAnnotation(OPMConstants.SOURCE))){
 						// Ignore until CDM updated with refine edge. TODO

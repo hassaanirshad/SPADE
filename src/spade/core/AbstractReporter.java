@@ -68,7 +68,7 @@ public abstract class AbstractReporter {
      * @return True if the buffer accepted the edge.
      */
     public final boolean putEdge(AbstractEdge edge) {
-    	if(edge != null){Kernel.profileConfig.auditNewVertex(edge.getAnnotations());}
+    	if(edge != null){Kernel.profileConfig.auditNewEdge(edge.getAnnotations());}
         return internalBuffer.putEdge(edge);
     }
 
