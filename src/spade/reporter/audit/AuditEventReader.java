@@ -38,8 +38,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import spade.core.Kernel;
 import spade.core.Settings;
-import spade.trace.profiler.AuditEventReaderProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 
@@ -52,8 +52,6 @@ import spade.utility.FileUtility;
  */
 public class AuditEventReader {
 
-	private final AuditEventReaderProfile profiler = new AuditEventReaderProfile();
-	
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	public static final String ARG0 = "a0",
@@ -371,9 +369,9 @@ public class AuditEventReader {
 				String line = null;
 				
 				while(true){
-					profiler.recordReadStart();
+					Kernel.profileConfig.aueRecordReadStart();
 					line = stream.readLine();
-					profiler.recordReadEnd();
+					Kernel.profileConfig.aueRecordReadEnd();
 					if(line == null){
 						break;
 					}
@@ -464,20 +462,20 @@ public class AuditEventReader {
 	 * @return map of key values
 	 */
 	private Map<String, String> getEventMap(Set<String> records){
-		profiler.eventConstructionStart();
+		Kernel.profileConfig.aueEventStart();
 		Map<String, String> eventMap = new HashMap<String, String>();
 		for(String record : records){
-			profiler.recordParseStart();
+			Kernel.profileConfig.aueRecordParseStart();
 			Map<String, String> rmap = parseEventLine(record);
-			profiler.recordParseEnd();
+			Kernel.profileConfig.aueRecordParseEnd();
 			eventMap.putAll(rmap);
 		}
-		profiler.eventConstructionEnd();
+		Kernel.profileConfig.aueEventEnd();
 		return eventMap;
 	}
 
 	public void close(){
-		profiler.shutdown();
+		Kernel.profileConfig.aueShutdown();
 		if(reportingEnabled){
 			printStats();
 		}

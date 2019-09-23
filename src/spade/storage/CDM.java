@@ -60,8 +60,8 @@ import com.bbn.tc.schema.serialization.AvroConfig;
 
 import spade.core.AbstractEdge;
 import spade.core.AbstractVertex;
+import spade.core.Kernel;
 import spade.reporter.audit.OPMConstants;
-import spade.trace.profiler.CDMProfile;
 import spade.utility.CommonFunctions;
 import spade.vertex.prov.Agent;
 
@@ -773,7 +773,7 @@ public class CDM extends Kafka {
 	
 	private boolean publishVertex(AbstractVertex incomingVertex) {
 		boolean result = false;
-		CDMProfile.instance.putVertexStart();
+		Kernel.profileConfig.cdmPutVertexStart();
 		try{
 			if(incomingVertex != null){
 				String type = incomingVertex.type();
@@ -790,7 +790,7 @@ public class CDM extends Kafka {
 		}catch(Exception e){
 			logger.log(Level.WARNING, null, e);
 		}
-		CDMProfile.instance.putVertexEnd();
+		Kernel.profileConfig.cdmPutVertexEnd();
 		return result;
 	}
 
@@ -960,9 +960,9 @@ public class CDM extends Kafka {
 		
 		if(processIndividually){
 			for(AbstractEdge currentEventEdge : edges){
-				CDMProfile.instance.putEdgeStart();
+				Kernel.profileConfig.cdmPutEdgeStart();
 				processEdges(Arrays.asList(currentEventEdge));
-				CDMProfile.instance.putEdgeEnd();
+				Kernel.profileConfig.cdmPutEdgeEnd();
 			}
 		}else{
 			processEdges(edges);
@@ -980,7 +980,7 @@ public class CDM extends Kafka {
 
 			publishStreamMarkerObject(false);
 
-			CDMProfile.instance.shutdown();
+			Kernel.profileConfig.cdmShutdown();
 			
 			return super.shutdown();
 		} catch (Exception exception) {
@@ -1023,7 +1023,7 @@ public class CDM extends Kafka {
 			EventType eventType = getEventType(edges);
 			
 			if(edges.size() == 1){
-				CDMProfile.instance.putEdgeStart();
+				Kernel.profileConfig.cdmPutEdgeStart();
 				edgeForEvent = edges.get(0);
 				if(edgeForEvent != null){
 					String edgeType = edgeForEvent.type();
@@ -1064,7 +1064,7 @@ public class CDM extends Kafka {
 				}else{
 					logger.log(Level.WARNING, "NULL edge for event {0}", new Object[]{eventType});
 				}
-				CDMProfile.instance.putEdgeEnd();
+				Kernel.profileConfig.cdmPutEdgeEnd();
 			}else{
 
 				AbstractEdge twoArtifactsEdge = getFirstMatchedEdge(edges, OPMConstants.TYPE, OPMConstants.WAS_DERIVED_FROM);
@@ -1095,9 +1095,9 @@ public class CDM extends Kafka {
 
 			if(actingVertex != null){
 				
-				CDMProfile.instance.putEdgeStart();
+				Kernel.profileConfig.cdmPutEdgeStart();
 				publishEvent(eventType, edgeForEvent, actingVertex, actedUpon1, actedUpon2);
-				CDMProfile.instance.putEdgeEnd();
+				Kernel.profileConfig.cdmPutEdgeEnd();
 
 				// POST publishing things
 				if(eventType.equals(EventType.EVENT_EXIT)){
@@ -1120,7 +1120,7 @@ public class CDM extends Kafka {
 			stats.put(key, 0L);
 		}
 		stats.put(key, stats.get(key) + 1);
-		CDMProfile.instance.newDatum(key);
+		Kernel.profileConfig.cdmNewDatum(key);
 	}
 
 	/**
