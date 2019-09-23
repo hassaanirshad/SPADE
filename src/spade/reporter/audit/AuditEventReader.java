@@ -37,8 +37,8 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 
+import spade.core.Kernel;
 import spade.core.Settings;
-import spade.trace.profiler.AuditEventReaderProfile;
 import spade.utility.CommonFunctions;
 import spade.utility.FileUtility;
 
@@ -51,8 +51,6 @@ import spade.utility.FileUtility;
  */
 public class AuditEventReader {
 
-	private final AuditEventReaderProfile profile = new AuditEventReaderProfile();
-	
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	public static final String ARG0 = "a0",
@@ -399,9 +397,9 @@ public class AuditEventReader {
 				String line = null;
 				
 				while(true){
-					profile.recordReadStart();
+					Kernel.profileConfig.aueRecordReadStart();
 					line = stream.readLine();
-					profile.recordReadEnd();
+					Kernel.profileConfig.aueRecordReadEnd();
 					if(line == null){
 						break;
 					}
@@ -498,13 +496,13 @@ public class AuditEventReader {
 	 * @return map of key values
 	 */
 	private Map<String, String> getEventMap(Set<String> records) throws Exception{
-		profile.eventConstructionStart();
+		Kernel.profileConfig.aueEventStart();
 		try{
 			Map<String, String> eventMap = new HashMap<String, String>();
 			for(String record : records){
-				profile.recordParseStart();
+				Kernel.profileConfig.aueRecordReadStart();
 				Map<String, String> rmap = parseEventLine(record);
-				profile.recordParseEnd();
+				Kernel.profileConfig.aueRecordReadEnd();
 				eventMap.putAll(rmap);
 			}
 			return eventMap;
@@ -512,12 +510,12 @@ public class AuditEventReader {
 			throw new MalformedAuditDataException(e.getMessage()+ 
 					" ["+ExceptionUtils.getStackTrace(e)+"] ", String.valueOf(records));
 		}finally{
-			profile.eventConstructionEnd();
+			Kernel.profileConfig.aueEventEnd();
 		}
 	}
 
 	public void close(){
-		profile.shutdown();
+		Kernel.profileConfig.aueShutdown();
 		if(reportingEnabled){
 			printStats();
 		}

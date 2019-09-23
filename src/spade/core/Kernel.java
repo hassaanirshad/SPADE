@@ -19,15 +19,6 @@
  */
 package spade.core;
 
-import spade.filter.FinalCommitFilter;
-import spade.utility.LogManager;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,6 +52,17 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+
+import spade.filter.FinalCommitFilter;
+import spade.utility.LogManager;
+import trace.profiler.client.ProfileConfig;
 
 /**
  * The SPADE kernel containing the control client and
@@ -139,6 +141,16 @@ public class Kernel
      * Set of sketches active on the local SPADE instance.
      */
     public static Set<AbstractSketch> sketches;
+    
+    public static ProfileConfig profileConfig = null;
+    
+    static{
+    	try{
+    		profileConfig = ProfileConfig.createInstance("cfg/spade.trace.profiler.ProfileConfig.config");
+    	}catch(Exception e){
+    		Logger.getLogger("ProfileConfigSetupLogger").log(Level.SEVERE, "Error in init of profile config", e);
+    	}
+    }
 
     public static boolean isShutdown()
     {
@@ -1516,6 +1528,8 @@ public class Kernel
 
         // Allow LogManager to complete its response to the shutdown
         LogManager.shutdownReset();
+        
+        profileConfig.shutdown();
     }
 
     public static String getPidFileName(){
